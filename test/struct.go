@@ -42,6 +42,8 @@ type SliceAndArray struct {
 	Field8  [3]float32 `cue:"field8"`
 	Field9  []float64  `cue:"field9"`
 	Field10 [3]float64 `cue:"field10"`
+	Field11 [3]byte    `cue:"field11"`
+	Field12 []byte     `cue:"field12"`
 }
 
 type SmallStruct struct {
