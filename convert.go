@@ -109,7 +109,7 @@ func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
 	return ident("TODO", false)
 }
 
-const tagName = "cue"
+const tagName = "json"
 
 func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 	st := &cueast.StructLit{
