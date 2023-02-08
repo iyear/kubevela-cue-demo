@@ -1,7 +1,7 @@
 ## KubeVela Cue DEMO
 
 ```shell
-go build -o cue-gen cmd/main.go && ./cue-gen
+go build -o cue-gen cmd/main.go && ./cue-gen --file test/struct.go
 
 cat test/struct.cue
 ```
