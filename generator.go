@@ -14,7 +14,7 @@ type Generator struct {
 
 	// immutable
 	pkg   *packages.Package
-	types typeInfo // TODO(iyear): no use in this demo
+	types typeInfo
 }
 
 func NewGenerator(f string) (*Generator, error) {

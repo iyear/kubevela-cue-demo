@@ -44,6 +44,9 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl) {
 			Label: cueast.NewString(typeSpec.Name.Name),
 			Value: g.makeStructLit(structType),
 		}
+		// there is no doc for typeSpec, so we only add x.Doc
+		makeComments(field, &commentUnion{comment: nil, doc: x.Doc})
+
 		cueast.SetRelPos(field, cuetoken.Blank)
 		decls = append(decls, field)
 	}
@@ -97,9 +100,7 @@ func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
 			Value: g.convert(t.Elem()),
 		}
 		return &cueast.StructLit{
-			Lbrace: cuetoken.Blank.Pos(),
-			Elts:   []cueast.Decl{f},
-			Rbrace: cuetoken.Blank.Pos(),
+			Elts: []cueast.Decl{f},
 		}
 	case *gotypes.Interface:
 		return ident("_", false)
@@ -118,6 +119,8 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 		Rbrace: cuetoken.Newline.Pos(),
 	}
 
+	comments := g.collectComments(x)
+
 	for i := 0; i < x.NumFields(); i++ {
 		field := x.Field(i)
 
@@ -135,6 +138,7 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 			Label: cueast.NewString(fieldName),
 			Value: expr,
 		}
+		makeComments(f, comments[i])
 
 		st.Elts = append(st.Elts, f)
 	}
