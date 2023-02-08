@@ -114,9 +114,13 @@ const tagName = "json"
 
 func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 	st := &cueast.StructLit{
-		Elts:   make([]cueast.Decl, 0),
-		Lbrace: cuetoken.Blank.Pos(),
-		Rbrace: cuetoken.Newline.Pos(),
+		Elts: make([]cueast.Decl, 0),
+	}
+
+	// if num of fields is 1, we don't need braces. Keep it simple.
+	if x.NumFields() > 1 {
+		st.Lbrace = cuetoken.Blank.Pos()
+		st.Rbrace = cuetoken.Newline.Pos()
 	}
 
 	comments := g.collectComments(x)
