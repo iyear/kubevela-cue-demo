@@ -25,9 +25,7 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 		typ := g.pkg.TypesInfo.TypeOf(typeSpec.Name)
 
 		if err := supportedType(nil, typ); err != nil {
-			// TODO(iyear): log? panic? ignore?
-			fmt.Printf("type: %v\n", err)
-			continue
+			return nil, fmt.Errorf("unsupported type %s: %w", typeSpec.Name.Name, err)
 		}
 
 		named, ok := typ.(*gotypes.Named)
