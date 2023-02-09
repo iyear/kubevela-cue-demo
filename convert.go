@@ -7,7 +7,6 @@ import (
 	goast "go/ast"
 	gotoken "go/token"
 	gotypes "go/types"
-	"reflect"
 	"strconv"
 )
 
@@ -110,8 +109,6 @@ func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
 	return ident("TODO", false)
 }
 
-const tagName = "json"
-
 func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 	st := &cueast.StructLit{
 		Elts: make([]cueast.Decl, 0),
@@ -128,18 +125,26 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 	for i := 0; i < x.NumFields(); i++ {
 		field := x.Field(i)
 
+		// TODO(iyear): support more complex tags and usages
+		opts := g.parseTag(x.Tag(i))
+
+		if opts.Name == "" {
+			opts.Name = field.Name()
+		}
+
 		expr := g.convert(field.Type())
 
-		fieldName := field.Name()
-		// TODO(iyear): support more complex tags and usages
-		if tag := x.Tag(i); tag != "" {
-			if n, ok := reflect.StructTag(tag).Lookup(tagName); ok {
-				fieldName = n
-			}
+		// process anonymous field
+		// TODO(iyear): auto remove duplicate fields
+		if field.Anonymous() && opts.Inline {
+			cueast.SetRelPos(expr, cuetoken.Newline)
+			// do not need a field to warp it
+			st.Elts = append(st.Elts, expr)
+			continue
 		}
 
 		f := &cueast.Field{
-			Label: cueast.NewString(fieldName),
+			Label: cueast.NewString(opts.Name),
 			Value: expr,
 		}
 		makeComments(f, comments[i])
