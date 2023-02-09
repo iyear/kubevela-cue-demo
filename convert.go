@@ -153,6 +153,11 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 	for i := 0; i < x.NumFields(); i++ {
 		field := x.Field(i)
 
+		// skip unexported fields
+		if !field.Exported() {
+			continue
+		}
+
 		// TODO(iyear): support more complex tags and usages
 		opts := g.parseTag(x.Tag(i))
 
