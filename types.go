@@ -1,6 +1,7 @@
 package kubecue
 
 import (
+	"fmt"
 	goast "go/ast"
 	gotypes "go/types"
 	"golang.org/x/tools/go/packages"
@@ -24,11 +25,11 @@ func getTypeInfo(p *packages.Package) typeInfo {
 	return m
 }
 
-func supportedType(stack []gotypes.Type, t gotypes.Type) (ok bool) {
-	// handle recursive types
+func supportedType(stack []gotypes.Type, t gotypes.Type) error {
+	// we expand structures recursively, so we can't support recursive types
 	for _, t0 := range stack {
 		if t0 == t {
-			return true
+			return fmt.Errorf("recursive type %s", t)
 		}
 	}
 	stack = append(stack, t)
@@ -36,9 +37,12 @@ func supportedType(stack []gotypes.Type, t gotypes.Type) (ok bool) {
 	t = t.Underlying()
 	switch x := t.(type) {
 	case *gotypes.Basic:
-		return x.String() != "invalid type"
+		if x.String() != "invalid type" {
+			return nil
+		}
+		return fmt.Errorf("unsupported type %s", t)
 	case *gotypes.Named:
-		return true
+		return nil
 	case *gotypes.Pointer:
 		return supportedType(stack, x.Elem())
 	case *gotypes.Slice:
@@ -47,22 +51,25 @@ func supportedType(stack []gotypes.Type, t gotypes.Type) (ok bool) {
 		return supportedType(stack, x.Elem())
 	case *gotypes.Map:
 		if b, ok := x.Key().Underlying().(*gotypes.Basic); !ok || b.Kind() != gotypes.String {
-			return false
+			return fmt.Errorf("unsupported map key type %s of %s", x.Key(), t)
 		}
 		return supportedType(stack, x.Elem())
 	case *gotypes.Struct:
 		// Eliminate structs with fields for which all fields are filtered.
 		if x.NumFields() == 0 {
-			return true
+			return nil
 		}
 		for i := 0; i < x.NumFields(); i++ {
 			f := x.Field(i)
-			if f.Exported() && supportedType(stack, f.Type()) {
-				return true
+			if f.Exported() {
+				if err := supportedType(stack, f.Type()); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	case *gotypes.Interface:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("unsupported type %s", t)
 }

@@ -25,9 +25,9 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl) {
 		// only process struct
 		typ := g.pkg.TypesInfo.TypeOf(typeSpec.Name)
 
-		if !supportedType(nil, typ) {
+		if err := supportedType(nil, typ); err != nil {
 			// TODO(iyear): log? panic? ignore?
-			fmt.Println("unsupported type:", typ.String())
+			fmt.Printf("type: %v\n", err)
 			continue
 		}
 

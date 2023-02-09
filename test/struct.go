@@ -87,5 +87,10 @@ type EmbedStruct struct {
 	} `json:"field2"`
 	Field3 http.Header `json:"field3"`
 	Field4 crypto.Hash `json:"field4"`
-	// Field5 *http.Request `json:"field5"` // inf loop currently
+}
+
+type MapField struct {
+	Field1 map[string]string `json:"field1"`
+	Field2 map[string]int    `json:"field2"`
+	Field3 map[int]string    `json:"field3"`
 }
