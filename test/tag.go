@@ -41,3 +41,10 @@ type Optional struct {
 		} `json:"field3,omitempty"`
 	} `json:"field6,omitempty"`
 }
+
+type Skip struct {
+	Field1 string `json:"-"`
+	Field2 string `json:"field2"`
+	Field3 string `json:"-"`
+	Field4 string `json:"field4"`
+}

@@ -65,3 +65,7 @@ Optional: {
 		}
 	}
 }
+Skip: {
+	field2: string
+	field4: string
+}

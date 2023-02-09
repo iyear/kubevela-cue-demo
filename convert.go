@@ -161,6 +161,11 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 		// TODO(iyear): support more complex tags and usages
 		opts := g.parseTag(x.Tag(i))
 
+		// skip fields with "-" tag
+		if opts.Name == "-" {
+			continue
+		}
+
 		if opts.Name == "" {
 			opts.Name = field.Name()
 		}
