@@ -10,8 +10,6 @@ import (
 )
 
 type Generator struct {
-	commentMap goast.CommentMap // TODO(iyear): no use in this demo
-
 	// immutable
 	pkg   *packages.Package
 	types typeInfo
@@ -35,8 +33,6 @@ func (g *Generator) Generate(w io.Writer) error {
 	var decls []cueast.Decl
 
 	for _, syntax := range g.pkg.Syntax {
-		// g.commentMap = goast.NewCommentMap(g.pkg.Fset, syntax, syntax.Comments)
-
 		for _, decl := range syntax.Decls {
 			if d, ok := decl.(*goast.GenDecl); ok {
 				t, err := g.convertDecls(d)
