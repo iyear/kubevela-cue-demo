@@ -12,18 +12,25 @@ type commentUnion struct {
 	doc     *goast.CommentGroup
 }
 
-func (g *Generator) collectComments(typ gotypes.Type) []*commentUnion {
-	list := g.types[typ].Fields.List
-	comments := make([]*commentUnion, 0, len(list))
+func (g *Generator) fieldComments(x *gotypes.Struct) []*commentUnion {
+	comments := make([]*commentUnion, x.NumFields())
 
-	for _, field := range list {
-		comments = append(comments, &commentUnion{comment: field.Comment, doc: field.Doc})
+	st, ok := g.types[x]
+	if !ok {
+		return comments
+	}
+
+	for i, field := range st.Fields.List {
+		comments[i] = &commentUnion{comment: field.Comment, doc: field.Doc}
 	}
 
 	return comments
 }
 
 func makeComments(node cueast.Node, c *commentUnion) {
+	if c == nil {
+		return
+	}
 	cg := make([]*cueast.Comment, 0)
 
 	if comment := makeComment(c.comment); comment != nil && len(comment.List) > 0 {

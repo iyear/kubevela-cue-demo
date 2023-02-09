@@ -32,12 +32,12 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 		if !ok {
 			continue
 		}
-		structType, ok := named.Underlying().(*gotypes.Struct)
+		st, ok := named.Underlying().(*gotypes.Struct)
 		if !ok {
 			continue
 		}
 
-		lit, err := g.makeStructLit(structType)
+		lit, err := g.convert(st)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) (*cueast.StructLit, error) 
 }
 
 func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map[string]struct{}) error {
-	comments := g.collectComments(x)
+	comments := g.fieldComments(x)
 
 	for i := 0; i < x.NumFields(); i++ {
 		field := x.Field(i)
