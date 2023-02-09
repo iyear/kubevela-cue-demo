@@ -39,7 +39,11 @@ func (g *Generator) Generate(w io.Writer) error {
 
 		for _, decl := range syntax.Decls {
 			if d, ok := decl.(*goast.GenDecl); ok {
-				decls = append(decls, g.convertDecls(d)...)
+				t, err := g.convertDecls(d)
+				if err != nil {
+					return err
+				}
+				decls = append(decls, t...)
 			}
 		}
 	}

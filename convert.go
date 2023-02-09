@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl) {
+func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error) {
 	if x.Tok != gotoken.TYPE { // TODO(iyear): currently only support 'type'
 		return
 	}
@@ -39,9 +39,14 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl) {
 			continue
 		}
 
+		lit, err := g.makeStructLit(structType)
+		if err != nil {
+			return nil, err
+		}
+
 		field := &cueast.Field{
 			Label: cueast.NewString(typeSpec.Name.Name),
-			Value: g.makeStructLit(structType),
+			Value: lit,
 		}
 		// there is no doc for typeSpec, so we only add x.Doc
 		makeComments(field, &commentUnion{comment: nil, doc: x.Doc})
@@ -50,28 +55,36 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl) {
 		decls = append(decls, field)
 	}
 
-	return decls
+	return decls, nil
 }
 
-func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
+func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 	switch t := typ.(type) {
 	case *gotypes.Basic:
-		return basicType(t)
+		return basicType(t), nil
 	case *gotypes.Named:
 		return g.convert(t.Underlying())
 	case *gotypes.Struct:
 		return g.makeStructLit(t)
 	case *gotypes.Pointer:
+		expr, err := g.convert(t.Elem())
+		if err != nil {
+			return nil, err
+		}
 		return &cueast.BinaryExpr{
 			X:  cueast.NewNull(),
 			Op: cuetoken.OR,
-			Y:  g.convert(t.Elem()),
-		}
+			Y:  expr,
+		}, nil
 	case *gotypes.Slice:
 		if t.Elem().String() == "byte" {
-			return ident("bytes", false)
+			return ident("bytes", false), nil
 		}
-		return cueast.NewList(&cueast.Ellipsis{Type: g.convert(t.Elem())})
+		expr, err := g.convert(t.Elem())
+		if err != nil {
+			return nil, err
+		}
+		return cueast.NewList(&cueast.Ellipsis{Type: expr}), nil
 	case *gotypes.Array:
 		if t.Elem().String() == "byte" {
 			// TODO: no way to constraint lengths of bytes for now, as regexps
@@ -79,7 +92,12 @@ func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
 			//     fmt.Fprint(e.w, fmt.Sprintf("=~ '^\C{%d}$'", x.Len())),
 			// but regexp does not support that.
 			// But translate to bytes, instead of [...byte] to be consistent.
-			return ident("bytes", false)
+			return ident("bytes", false), nil
+		}
+
+		expr, err := g.convert(t.Elem())
+		if err != nil {
+			return nil, err
 		}
 		return &cueast.BinaryExpr{
 			X: &cueast.BasicLit{
@@ -87,29 +105,32 @@ func (g *Generator) convert(typ gotypes.Type) cueast.Expr {
 				Value: strconv.Itoa(int(t.Len())),
 			},
 			Op: cuetoken.MUL,
-			Y:  cueast.NewList(g.convert(t.Elem())),
-		}
+			Y:  cueast.NewList(expr),
+		}, nil
 	case *gotypes.Map:
 		if b, ok := t.Key().Underlying().(*gotypes.Basic); !ok || b.Kind() != gotypes.String {
-			panic(fmt.Sprintf("unsupported map key type %T", t.Key()))
+			return nil, fmt.Errorf("unsupported map key type %s of %s", t.Key(), t)
 		}
 
+		expr, err := g.convert(t.Elem())
+		if err != nil {
+			return nil, err
+		}
 		f := &cueast.Field{
 			Label: cueast.NewList(ident("string", false)),
-			Value: g.convert(t.Elem()),
+			Value: expr,
 		}
 		return &cueast.StructLit{
 			Elts: []cueast.Decl{f},
-		}
+		}, nil
 	case *gotypes.Interface:
-		return ident("_", false)
+		return ident("_", false), nil
 	}
 
-	// TODO(iyear): placeholder? panic? error?
-	return ident("TODO", false)
+	return nil, fmt.Errorf("unsupported type %s", typ)
 }
 
-func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
+func (g *Generator) makeStructLit(x *gotypes.Struct) (*cueast.StructLit, error) {
 	st := &cueast.StructLit{
 		Elts: make([]cueast.Decl, 0),
 	}
@@ -120,6 +141,15 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 		st.Rbrace = cuetoken.Newline.Pos()
 	}
 
+	err := g.addFields(st, x, map[string]struct{}{})
+	if err != nil {
+		return nil, err
+	}
+
+	return st, nil
+}
+
+func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map[string]struct{}) error {
 	comments := g.collectComments(x)
 
 	for i := 0; i < x.NumFields(); i++ {
@@ -132,16 +162,26 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 			opts.Name = field.Name()
 		}
 
-		expr := g.convert(field.Type())
-
 		// process anonymous field with inline tag
-		// TODO(iyear): auto remove duplicate fields
 		if field.Anonymous() && opts.Inline {
-			cueast.SetRelPos(expr, cuetoken.Newline)
-			// do not need a field to warp it
-			st.Elts = append(st.Elts, expr)
+			if t, ok := field.Type().Underlying().(*gotypes.Struct); ok {
+				if err := g.addFields(st, t, names); err != nil {
+					return err
+				}
+			}
 			continue
 		}
+
+		expr, err := g.convert(field.Type())
+		if err != nil {
+			return err
+		}
+
+		// can't decl same field in the same scope
+		if _, ok := names[opts.Name]; ok {
+			return fmt.Errorf("field '%s' already exists, can not declare duplicate field name", opts.Name)
+		}
+		names[opts.Name] = struct{}{}
 
 		f := &cueast.Field{
 			Label: cueast.NewString(opts.Name),
@@ -159,5 +199,5 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 		st.Elts = append(st.Elts, f)
 	}
 
-	return st
+	return nil
 }
