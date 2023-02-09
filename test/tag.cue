@@ -67,5 +67,21 @@ Inline: {
 		}
 	}
 }
-
-output: InlineStruct2 & {field2: "ssss"}
+Optional: {
+	field1?: string
+	field2:  string
+	field3?: string
+	field4:  string
+	field5: {
+		field1?: string
+		field2:  string
+	}
+	field6?: {
+		field1?: string
+		field2:  string
+		field3?: {
+			field1?: string
+			field2:  string
+		}
+	}
+}

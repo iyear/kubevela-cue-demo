@@ -134,7 +134,7 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 
 		expr := g.convert(field.Type())
 
-		// process anonymous field
+		// process anonymous field with inline tag
 		// TODO(iyear): auto remove duplicate fields
 		if field.Anonymous() && opts.Inline {
 			cueast.SetRelPos(expr, cuetoken.Newline)
@@ -147,6 +147,13 @@ func (g *Generator) makeStructLit(x *gotypes.Struct) *cueast.StructLit {
 			Label: cueast.NewString(opts.Name),
 			Value: expr,
 		}
+
+		// process field with optional tag
+		if opts.Optional {
+			f.Token = cuetoken.COLON
+			f.Optional = cuetoken.Blank.Pos()
+		}
+
 		makeComments(f, comments[i])
 
 		st.Elts = append(st.Elts, f)
