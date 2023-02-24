@@ -13,6 +13,8 @@ type Generator struct {
 	// immutable
 	pkg   *packages.Package
 	types typeInfo
+
+	anyTypes map[string]struct{}
 }
 
 func NewGenerator(f string) (*Generator, error) {
@@ -24,8 +26,9 @@ func NewGenerator(f string) (*Generator, error) {
 	types := getTypeInfo(pkg)
 
 	return &Generator{
-		pkg:   pkg,
-		types: types,
+		pkg:      pkg,
+		types:    types,
+		anyTypes: make(map[string]struct{}),
 	}, nil
 }
 

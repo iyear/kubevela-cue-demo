@@ -31,6 +31,10 @@ func do(file string) (rerr error) {
 		return err
 	}
 
+	g.RegisterAny(
+		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.Unstructured",
+	)
+
 	f, err := os.Create(changeExt(file, ".cue"))
 	defer multierr.AppendInvoke(&rerr, multierr.Close(f))
 

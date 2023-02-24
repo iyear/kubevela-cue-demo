@@ -1,9 +1,7 @@
 package test
 
-ResourceReturns: $returns: null | {
-	Object: {
-		...
-	}
+ResourceReturns: $returns: {
+	...
 }
 Any: {
 	a: {

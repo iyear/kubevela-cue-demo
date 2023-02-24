@@ -27,3 +27,7 @@ func basicType(x *gotypes.Basic) cueast.Expr {
 		return ident(t, false)
 	}
 }
+
+func anyLit() cueast.Expr {
+	return &cueast.StructLit{Elts: []cueast.Decl{&cueast.Ellipsis{}}}
+}

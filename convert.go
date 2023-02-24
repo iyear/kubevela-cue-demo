@@ -57,6 +57,10 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 }
 
 func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
+	if _, ok := g.anyTypes[typ.String()]; ok {
+		return anyLit(), nil
+	}
+
 	switch t := typ.(type) {
 	case *gotypes.Basic:
 		return basicType(t), nil
@@ -113,7 +117,7 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 		elem := t.Elem()
 		// if map is map[string]interface{}, we treat it as {...}
 		if i, ok := elem.Underlying().(*gotypes.Interface); ok && i.Empty() {
-			return &cueast.StructLit{Elts: []cueast.Decl{&cueast.Ellipsis{}}}, nil
+			return anyLit(), nil
 		}
 		expr, err := g.convert(elem)
 		if err != nil {
