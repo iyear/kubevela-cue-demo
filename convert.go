@@ -176,6 +176,12 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 			opts.Name = field.Name()
 		}
 
+		// can't decl same field in the same scope
+		if _, ok := names[opts.Name]; ok {
+			return fmt.Errorf("field '%s' already exists, can not declare duplicate field name", opts.Name)
+		}
+		names[opts.Name] = struct{}{}
+
 		// process anonymous field with inline tag
 		if field.Anonymous() && opts.Inline {
 			if t, ok := field.Type().Underlying().(*gotypes.Struct); ok {
@@ -186,68 +192,19 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 			continue
 		}
 
-		var expr cueast.Expr
+		var (
+			expr cueast.Expr
+			err  error
+		)
+		switch {
 		// process field with enum tag
-		if opts.Enum != nil && len(opts.Enum) > 0 && opts.Enum[0] != "" {
-			var err error
-			tt, ok := field.Type().(*gotypes.Basic)
-			if !ok {
-				// TODO(iyear): support more types
-				return fmt.Errorf("enum value only support [int, float, string, bool]")
-			}
-
-			expr, err = basicLabel(tt, opts.Enum[0])
-			if err != nil {
-				return fmt.Errorf("field '%s': %w", opts.Name, err)
-			}
-
-			for _, v := range opts.Enum[1:] {
-				enumExpr, err := basicLabel(tt, v)
-				if err != nil {
-					return fmt.Errorf("field '%s': %w", opts.Name, err)
-				}
-
-				if opts.Default != nil && *opts.Default == v {
-					enumExpr = &cueast.UnaryExpr{Op: cuetoken.MUL, X: enumExpr}
-				}
-
-				expr = &cueast.BinaryExpr{
-					X:  expr,
-					Op: cuetoken.OR,
-					Y:  enumExpr,
-				}
-			}
-		} else {
-			var err error
-			expr, err = g.convert(field.Type())
-			if err != nil {
-				return fmt.Errorf("field '%s': %w", opts.Name, err)
-			}
-
-			// can't decl same field in the same scope
-			if _, ok := names[opts.Name]; ok {
-				return fmt.Errorf("field '%s' already exists, can not declare duplicate field name", opts.Name)
-			}
-			names[opts.Name] = struct{}{}
-
-			// process field with default tag
-			if opts.Default != nil {
-				tt, ok := field.Type().(*gotypes.Basic)
-				if !ok {
-					// TODO(iyear): support more types
-					return fmt.Errorf("default value only support [int, float, string, bool]")
-				}
-
-				defaultExpr, err := basicLabel(tt, *opts.Default)
-				if err != nil {
-					return err
-				}
-				expr = &cueast.BinaryExpr{
-					X:  &cueast.UnaryExpr{Op: cuetoken.MUL, X: defaultExpr},
-					Op: cuetoken.OR,
-					Y:  expr,
-				}
-			}
+		case opts.Enum != nil && len(opts.Enum) > 0 && opts.Enum[0] != "":
+			expr, err = g.enumField(field.Type(), opts)
+		default:
+			expr, err = g.normalField(field.Type(), opts)
+		}
+		if err != nil {
+			return fmt.Errorf("field '%s': %w", opts.Name, err)
 		}
 
 		f := &cueast.Field{
@@ -267,4 +224,65 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 	}
 
 	return nil
+}
+
+func (g *Generator) enumField(typ gotypes.Type, opts *TagOptions) (cueast.Expr, error) {
+	tt, ok := typ.(*gotypes.Basic)
+	if !ok {
+		// TODO(iyear): support more types
+		return nil, fmt.Errorf("enum value only support [int, float, string, bool]")
+	}
+
+	expr, err := basicLabel(tt, opts.Enum[0])
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range opts.Enum[1:] {
+		enumExpr, err := basicLabel(tt, v)
+		if err != nil {
+			return nil, err
+		}
+
+		// default value should be marked with *
+		if opts.Default != nil && *opts.Default == v {
+			enumExpr = &cueast.UnaryExpr{Op: cuetoken.MUL, X: enumExpr}
+		}
+
+		expr = &cueast.BinaryExpr{
+			X:  expr,
+			Op: cuetoken.OR,
+			Y:  enumExpr,
+		}
+	}
+
+	return expr, nil
+}
+
+func (g *Generator) normalField(typ gotypes.Type, opts *TagOptions) (cueast.Expr, error) {
+	expr, err := g.convert(typ)
+	if err != nil {
+		return nil, err
+	}
+
+	// process field with default tag
+	if opts.Default != nil {
+		tt, ok := typ.(*gotypes.Basic)
+		if !ok {
+			// TODO(iyear): support more types
+			return nil, fmt.Errorf("default value only support [int, float, string, bool]")
+		}
+
+		defaultExpr, err := basicLabel(tt, *opts.Default)
+		if err != nil {
+			return nil, err
+		}
+		expr = &cueast.BinaryExpr{
+			X:  &cueast.UnaryExpr{Op: cuetoken.MUL, X: defaultExpr},
+			Op: cuetoken.OR,
+			Y:  expr,
+		}
+	}
+
+	return expr, nil
 }
