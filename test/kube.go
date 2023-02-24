@@ -11,4 +11,5 @@ type Any struct {
 	A map[string]interface{} `json:"a"`
 	B map[string]any         `json:"b"`
 	C map[string]string      `json:"c"`
+	D any                    `json:"d"`
 }

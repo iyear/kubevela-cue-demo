@@ -132,6 +132,9 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 			Elts: []cueast.Decl{f},
 		}, nil
 	case *gotypes.Interface:
+		if t.Empty() {
+			return anyLit(), nil
+		}
 		return ident("_", false), nil
 	}
 
