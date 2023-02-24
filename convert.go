@@ -110,10 +110,16 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 			return nil, fmt.Errorf("unsupported map key type %s of %s", t.Key(), t)
 		}
 
-		expr, err := g.convert(t.Elem())
+		elem := t.Elem()
+		// if map is map[string]interface{}, we treat it as {...}
+		if i, ok := elem.Underlying().(*gotypes.Interface); ok && i.Empty() {
+			return &cueast.StructLit{Elts: []cueast.Decl{&cueast.Ellipsis{}}}, nil
+		}
+		expr, err := g.convert(elem)
 		if err != nil {
 			return nil, err
 		}
+
 		f := &cueast.Field{
 			Label: cueast.NewList(ident("string", false)),
 			Value: expr,
