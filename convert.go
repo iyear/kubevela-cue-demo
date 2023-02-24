@@ -57,6 +57,7 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 }
 
 func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
+	// if type is registered as any, return {...}
 	if _, ok := g.anyTypes[typ.String()]; ok {
 		return anyLit(), nil
 	}
@@ -114,12 +115,7 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 			return nil, fmt.Errorf("unsupported map key type %s of %s", t.Key(), t)
 		}
 
-		elem := t.Elem()
-		// if map is map[string]interface{}, we treat it as {...}
-		if i, ok := elem.Underlying().(*gotypes.Interface); ok && i.Empty() {
-			return anyLit(), nil
-		}
-		expr, err := g.convert(elem)
+		expr, err := g.convert(t.Elem())
 		if err != nil {
 			return nil, err
 		}
@@ -132,9 +128,6 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 			Elts: []cueast.Decl{f},
 		}, nil
 	case *gotypes.Interface:
-		if t.Empty() {
-			return anyLit(), nil
-		}
 		return ident("_", false), nil
 	}
 

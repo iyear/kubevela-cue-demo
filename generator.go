@@ -17,6 +17,13 @@ type Generator struct {
 	anyTypes map[string]struct{}
 }
 
+var defaultAnyTypes = []string{
+	"map[string]interface{}",
+	"map[string]any",
+	"interface{}",
+	"any",
+}
+
 func NewGenerator(f string) (*Generator, error) {
 	pkg, err := loadPackage(f)
 	if err != nil {
@@ -25,11 +32,15 @@ func NewGenerator(f string) (*Generator, error) {
 
 	types := getTypeInfo(pkg)
 
-	return &Generator{
+	g := &Generator{
 		pkg:      pkg,
 		types:    types,
 		anyTypes: make(map[string]struct{}),
-	}, nil
+	}
+
+	g.RegisterAny(defaultAnyTypes...)
+
+	return g, nil
 }
 
 func (g *Generator) Generate(w io.Writer) error {
