@@ -204,6 +204,25 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 		}
 		names[opts.Name] = struct{}{}
 
+		// process field with default tag
+		if opts.Default != nil {
+			tt, ok := field.Type().(*gotypes.Basic)
+			if !ok {
+				// TODO(iyear): support more types
+				return fmt.Errorf("default value only support [int, float, string, bool]")
+			}
+
+			defaultExpr, err := basicLabel(tt, *opts.Default)
+			if err != nil {
+				return err
+			}
+			expr = &cueast.BinaryExpr{
+				X:  &cueast.UnaryExpr{Op: cuetoken.MUL, X: defaultExpr},
+				Op: cuetoken.OR,
+				Y:  expr,
+			}
+		}
+
 		f := &cueast.Field{
 			Label: cueast.NewString(opts.Name),
 			Value: expr,
