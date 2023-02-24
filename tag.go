@@ -13,6 +13,7 @@ type TagOptions struct {
 
 	// extension
 	Default *string // nil means no default value
+	Enum    []string
 }
 
 // TODO(iyear): be customizable
@@ -35,7 +36,8 @@ func (g *Generator) parseTag(tag string) *TagOptions {
 		Inline:   opts.Has("inline"),
 		Optional: opts.Has("omitempty"),
 
-		Default: ext.Get("default"),
+		Default: ext.GetX("default"),
+		Enum:    strings.Split(ext.Get("enum"), ","),
 	}
 }
 
@@ -95,9 +97,13 @@ func parseExtTag(str string) extTagOptions {
 
 type extTagOptions map[string]string
 
-func (e extTagOptions) Get(key string) *string {
+func (e extTagOptions) GetX(key string) *string {
 	if v, ok := e[key]; ok {
 		return &v
 	}
 	return nil
+}
+
+func (e extTagOptions) Get(key string) string {
+	return e[key]
 }
