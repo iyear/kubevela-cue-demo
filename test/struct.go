@@ -92,5 +92,4 @@ type EmbedStruct struct {
 type MapField struct {
 	Field1 map[string]string `json:"field1"`
 	Field2 map[string]int    `json:"field2"`
-	Field3 map[int]string    `json:"field3"`
 }

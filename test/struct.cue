@@ -84,3 +84,7 @@ EmbedStruct: {
 	field3: [string]: [...string]
 	field4: uint
 }
+MapField: {
+	field1: [string]: string
+	field2: [string]: int
+}
