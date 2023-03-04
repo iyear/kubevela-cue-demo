@@ -14,7 +14,8 @@ type Generator struct {
 	pkg   *packages.Package
 	types typeInfo
 
-	anyTypes map[string]struct{}
+	anyTypes   map[string]struct{}
+	typeFilter func(*goast.TypeSpec) bool
 }
 
 var defaultAnyTypes = []string{
@@ -36,6 +37,9 @@ func NewGenerator(f string) (*Generator, error) {
 		pkg:      pkg,
 		types:    types,
 		anyTypes: make(map[string]struct{}),
+		typeFilter: func(_ *goast.TypeSpec) bool {
+			return true
+		},
 	}
 
 	g.RegisterAny(defaultAnyTypes...)

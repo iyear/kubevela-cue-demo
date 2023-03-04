@@ -21,6 +21,10 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 			continue
 		}
 
+		if !g.typeFilter(typeSpec) {
+			continue
+		}
+
 		// only process struct
 		typ := g.pkg.TypesInfo.TypeOf(typeSpec.Name)
 
