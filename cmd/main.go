@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go.uber.org/multierr"
-	"kubecue"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -19,26 +16,21 @@ func init() {
 // working dir is root of project
 func main() {
 	start := time.Now()
-	if err := do(*f); err != nil {
-		panic(err)
-	}
-	fmt.Printf("time: %s", time.Since(start))
-}
 
-func do(file string) (rerr error) {
-	g, err := kubecue.NewGenerator(file)
+	fmt.Println("parsing file: ", *f)
+
+	var err error
+	switch flag.Arg(0) {
+	case "provider":
+		err = providerGen(*f)
+	}
+
 	if err != nil {
-		return err
+		fmt.Println(err)
+		return
 	}
 
-	g.RegisterAny(
-		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.Unstructured",
-	)
-
-	f, err := os.Create(changeExt(file, ".cue"))
-	defer multierr.AppendInvoke(&rerr, multierr.Close(f))
-
-	return g.Generate(f)
+	fmt.Printf("time: %s", time.Since(start))
 }
 
 func changeExt(file, ext string) string {
