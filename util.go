@@ -6,16 +6,11 @@ import (
 	"fmt"
 	gotypes "go/types"
 	"strconv"
-	"unicode"
 )
 
 func Ident(name string, isDef bool) *cueast.Ident {
 	if isDef {
-		r := []rune(name)[0]
 		name = "#" + name
-		if !unicode.Is(unicode.Lu, r) {
-			name = "_" + name
-		}
 	}
 	return cueast.NewIdent(name)
 }
