@@ -85,7 +85,7 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 		}, nil
 	case *gotypes.Slice:
 		if t.Elem().String() == "byte" {
-			return ident("bytes", false), nil
+			return Ident("bytes", false), nil
 		}
 		expr, err := g.convert(t.Elem())
 		if err != nil {
@@ -99,7 +99,7 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 			//     fmt.Fprint(e.w, fmt.Sprintf("=~ '^\C{%d}$'", x.Len())),
 			// but regexp does not support that.
 			// But translate to bytes, instead of [...byte] to be consistent.
-			return ident("bytes", false), nil
+			return Ident("bytes", false), nil
 		}
 
 		expr, err := g.convert(t.Elem())
@@ -125,14 +125,14 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 		}
 
 		f := &cueast.Field{
-			Label: cueast.NewList(ident("string", false)),
+			Label: cueast.NewList(Ident("string", false)),
 			Value: expr,
 		}
 		return &cueast.StructLit{
 			Elts: []cueast.Decl{f},
 		}, nil
 	case *gotypes.Interface:
-		return ident("_", false), nil
+		return Ident("_", false), nil
 	}
 
 	return nil, fmt.Errorf("unsupported type %s", typ)

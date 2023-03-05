@@ -9,7 +9,7 @@ import (
 	"unicode"
 )
 
-func ident(name string, isDef bool) *cueast.Ident {
+func Ident(name string, isDef bool) *cueast.Ident {
 	if isDef {
 		r := []rune(name)[0]
 		name = "#" + name
@@ -23,11 +23,11 @@ func ident(name string, isDef bool) *cueast.Ident {
 func basicType(x *gotypes.Basic) cueast.Expr {
 	switch t := x.String(); t {
 	case "uintptr":
-		return ident("uint64", false)
+		return Ident("uint64", false)
 	case "byte":
-		return ident("uint8", false)
+		return Ident("uint8", false)
 	default:
-		return ident(t, false)
+		return Ident(t, false)
 	}
 }
 

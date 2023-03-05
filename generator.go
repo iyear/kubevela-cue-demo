@@ -65,7 +65,7 @@ func (g *Generator) Generate() ([]cueast.Decl, error) {
 }
 
 func (g *Generator) Write(w io.Writer, decls []cueast.Decl) error {
-	pkg := &cueast.Package{Name: ident(g.pkg.Name, false)}
+	pkg := &cueast.Package{Name: Ident(g.pkg.Name, false)}
 
 	f := &cueast.File{Decls: []cueast.Decl{pkg}}
 	f.Decls = append(f.Decls, decls...)
