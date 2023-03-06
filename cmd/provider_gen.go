@@ -70,18 +70,16 @@ func providerGen(file string) (rerr error) {
 
 // extractProviders extracts the providers from the given package
 func extractProviders(pkg *packages.Package) (providers []provider, rerr error) {
-	// capture panic caused by invalid type assertion or out of range index,
-	// so we don't need to check each type assertion and index
-	// defer func() {
-	// 	if r := recover(); r != nil {
-	// 		rerr = fmt.Errorf("extract providers: panic: %v", r)
-	// 	}
-	// }()
-
-	var funcExpr *goast.CompositeLit
+	var (
+		funcExpr *goast.CompositeLit
+		ok       bool
+	)
 	for k, v := range pkg.TypesInfo.Types {
-		if v.Type.String() == TypeProviderFnMap {
-			funcExpr = k.(*goast.CompositeLit)
+		if v.Type.String() != TypeProviderFnMap {
+			continue
+		}
+
+		if funcExpr, ok = k.(*goast.CompositeLit); ok {
 			break
 		}
 	}
@@ -89,6 +87,14 @@ func extractProviders(pkg *packages.Package) (providers []provider, rerr error) 
 	if funcExpr == nil {
 		return nil, fmt.Errorf("no provider function map found like '%s'", TypeProviderFnMap)
 	}
+
+	// capture panic caused by invalid type assertion or out of range index,
+	// so we don't need to check each type assertion and index
+	defer func() {
+		if r := recover(); r != nil {
+			rerr = fmt.Errorf("extract providers: panic: %v", r)
+		}
+	}()
 
 	for _, e := range funcExpr.Elts {
 		kv := e.(*goast.KeyValueExpr)
