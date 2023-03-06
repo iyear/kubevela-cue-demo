@@ -10,50 +10,32 @@ import (
 )
 
 type Generator struct {
-	// immutable
 	pkg   *packages.Package
 	types typeInfo
 	opts  *options
-
-	anyTypes   map[string]struct{}
-	typeFilter func(*goast.TypeSpec) bool
 }
 
-var defaultAnyTypes = []string{
-	"map[string]interface{}",
-	"map[string]any",
-	"interface{}",
-	"any",
-}
-
-func NewGenerator(f string, opts ...Option) (*Generator, error) {
+func NewGenerator(f string) (*Generator, error) {
 	pkg, err := loadPackage(f)
 	if err != nil {
 		return nil, err
 	}
 
-	types := getTypeInfo(pkg)
-
 	g := &Generator{
-		pkg:      pkg,
-		types:    types,
-		opts:     defaultOptions,
-		anyTypes: make(map[string]struct{}),
-		typeFilter: func(_ *goast.TypeSpec) bool {
-			return true
-		},
+		pkg:   pkg,
+		types: getTypeInfo(pkg),
 	}
-
-	for _, opt := range opts {
-		opt(g.opts)
-	}
-
-	g.RegisterAny(defaultAnyTypes...)
 
 	return g, nil
 }
 
-func (g *Generator) Generate() ([]cueast.Decl, error) {
+// Generate can be called multiple times with different options.
+func (g *Generator) Generate(opts ...Option) ([]cueast.Decl, error) {
+	g.opts = defaultOptions
+	for _, opt := range opts {
+		opt(g.opts)
+	}
+
 	var decls []cueast.Decl
 	for _, syntax := range g.pkg.Syntax {
 		for _, decl := range syntax.Decls {

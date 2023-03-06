@@ -26,28 +26,21 @@ type provider struct {
 }
 
 func providerGen(file string) (rerr error) {
-	opts := make([]kubecue.Option, 0)
+	g, err := kubecue.NewGenerator(file)
+	if err != nil {
+		return err
+	}
 
+	// make options
+	opts := make([]kubecue.Option, 0)
+	opts = append(opts, kubecue.WithAnyTypes(
+		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.Unstructured",
+		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.UnstructuredList",
+	))
 	if *nonNull {
 		opts = append(opts, kubecue.WithNonNull())
 	}
-
-	g, err := kubecue.NewGenerator(file, opts...)
-	if err != nil {
-		return err
-	}
-
-	g.RegisterAny(
-		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.Unstructured",
-		"*k8s.io/apimachinery/pkg/apis/meta/v1/unstructured.UnstructuredList",
-	)
-
-	providers, err := extractProviders(g.Package())
-	if err != nil {
-		return err
-	}
-
-	g.RegisterTypeFilter(func(spec *goast.TypeSpec) bool {
+	opts = append(opts, kubecue.WithTypeFilter(func(spec *goast.TypeSpec) bool {
 		typ := g.Package().TypesInfo.TypeOf(spec.Type)
 
 		if strings.HasPrefix(typ.String(), TypeProvidersParams) ||
@@ -56,13 +49,17 @@ func providerGen(file string) (rerr error) {
 		}
 
 		return false
-	})
+	}))
 
-	decls, err := g.Generate()
+	decls, err := g.Generate(opts...)
 	if err != nil {
 		return err
 	}
 
+	providers, err := extractProviders(g.Package())
+	if err != nil {
+		return err
+	}
 	newDecls, err := modifyDecls(g.Package().Name, decls, providers)
 	if err != nil {
 		return err

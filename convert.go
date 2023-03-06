@@ -21,7 +21,7 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 			continue
 		}
 
-		if !g.typeFilter(typeSpec) {
+		if !g.opts.typeFilter(typeSpec) {
 			continue
 		}
 
@@ -62,7 +62,7 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 
 func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 	// if type is registered as any, return {...}
-	if _, ok := g.anyTypes[typ.String()]; ok {
+	if _, ok := g.opts.anyTypes[typ.String()]; ok {
 		return anyLit(), nil
 	}
 
