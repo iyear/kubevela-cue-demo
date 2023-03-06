@@ -129,9 +129,9 @@ func modifyDecls(provider string, old []cueast.Decl, providers []provider) (decl
 	mapping := make(map[string]cueast.Expr)
 	for _, decl := range old {
 		field := decl.(*cueast.Field)
-		key := field.Label.(*cueast.BasicLit)
+		key := field.Label.(*cueast.Ident)
 
-		mapping[unQuote(key.Value)] = field.Value
+		mapping[unQuote(key.Name)] = field.Value
 	}
 
 	providerField := &cueast.Field{

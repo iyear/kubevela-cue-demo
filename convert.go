@@ -47,7 +47,7 @@ func (g *Generator) convertDecls(x *goast.GenDecl) (decls []cueast.Decl, _ error
 		}
 
 		field := &cueast.Field{
-			Label: cueast.NewString(typeSpec.Name.Name),
+			Label: Ident(typeSpec.Name.Name, false),
 			Value: lit,
 		}
 		// there is no doc for typeSpec, so we only add x.Doc
@@ -212,7 +212,7 @@ func (g *Generator) addFields(st *cueast.StructLit, x *gotypes.Struct, names map
 		}
 
 		f := &cueast.Field{
-			Label: cueast.NewString(opts.Name),
+			Label: Ident(opts.Name, false),
 			Value: expr,
 		}
 
