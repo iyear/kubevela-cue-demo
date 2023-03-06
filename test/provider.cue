@@ -8,11 +8,9 @@ package test
 		resource: {
 			...
 		}
-		options: {
-			threeWayMergePatch: {
-				enabled:          bool
-				annotationPrefix: string
-			}
+		options: threeWayMergePatch: {
+			enabled:          bool
+			annotationPrefix: string
 		}
 	}
 	$returns: {
@@ -28,11 +26,9 @@ package test
 		resource: {
 			...
 		}
-		options: {
-			threeWayMergePatch: {
-				enabled:          bool
-				annotationPrefix: string
-			}
+		options: threeWayMergePatch: {
+			enabled:          bool
+			annotationPrefix: string
 		}
 	}
 	$returns: {
@@ -45,11 +41,9 @@ package test
 	#provider: "test"
 	$params: {
 		cluster: string
-		filter?: null | {
+		filter?: {
 			namespace?: string
-			matchingLabels?: {
-				[string]: string
-			}
+			matchingLabels?: [string]: string
 		}
 		resource: {
 			...

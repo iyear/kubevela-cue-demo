@@ -78,6 +78,12 @@ func (g *Generator) convert(typ gotypes.Type) (cueast.Expr, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// if nonNull is true, we don't need to add null enum
+		if g.opts.nonNull {
+			return expr, nil
+		}
+
 		return &cueast.BinaryExpr{
 			X:  cueast.NewNull(),
 			Op: cuetoken.OR,

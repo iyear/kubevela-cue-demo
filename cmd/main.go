@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-var f = flag.String("file", "", "file to convert")
+var (
+	f       = flag.String("file", "", "file to convert")
+	nonNull = flag.Bool("non-null", false, "do not generate null enum for pointer type")
+)
 
 func init() {
 	flag.Parse()

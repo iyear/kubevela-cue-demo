@@ -26,7 +26,13 @@ type provider struct {
 }
 
 func providerGen(file string) (rerr error) {
-	g, err := kubecue.NewGenerator(file)
+	opts := make([]kubecue.Option, 0)
+
+	if *nonNull {
+		opts = append(opts, kubecue.WithNonNull())
+	}
+
+	g, err := kubecue.NewGenerator(file, opts...)
 	if err != nil {
 		return err
 	}

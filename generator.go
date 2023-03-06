@@ -13,6 +13,7 @@ type Generator struct {
 	// immutable
 	pkg   *packages.Package
 	types typeInfo
+	opts  *options
 
 	anyTypes   map[string]struct{}
 	typeFilter func(*goast.TypeSpec) bool
@@ -25,7 +26,7 @@ var defaultAnyTypes = []string{
 	"any",
 }
 
-func NewGenerator(f string) (*Generator, error) {
+func NewGenerator(f string, opts ...Option) (*Generator, error) {
 	pkg, err := loadPackage(f)
 	if err != nil {
 		return nil, err
@@ -36,10 +37,15 @@ func NewGenerator(f string) (*Generator, error) {
 	g := &Generator{
 		pkg:      pkg,
 		types:    types,
+		opts:     defaultOptions,
 		anyTypes: make(map[string]struct{}),
 		typeFilter: func(_ *goast.TypeSpec) bool {
 			return true
 		},
+	}
+
+	for _, opt := range opts {
+		opt(g.opts)
 	}
 
 	g.RegisterAny(defaultAnyTypes...)
