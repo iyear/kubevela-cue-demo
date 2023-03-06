@@ -74,20 +74,20 @@ func providerGen(file string) (rerr error) {
 // extractProviders extracts the providers from the given package
 func extractProviders(pkg *packages.Package) (providers []provider, rerr error) {
 	var (
-		funcExpr *goast.CompositeLit
-		ok       bool
+		providersMap *goast.CompositeLit
+		ok           bool
 	)
 	for k, v := range pkg.TypesInfo.Types {
 		if v.Type.String() != TypeProviderFnMap {
 			continue
 		}
 
-		if funcExpr, ok = k.(*goast.CompositeLit); ok {
+		if providersMap, ok = k.(*goast.CompositeLit); ok {
 			break
 		}
 	}
 
-	if funcExpr == nil {
+	if providersMap == nil {
 		return nil, fmt.Errorf("no provider function map found like '%s'", TypeProviderFnMap)
 	}
 
@@ -99,7 +99,7 @@ func extractProviders(pkg *packages.Package) (providers []provider, rerr error) 
 		}
 	}()
 
-	for _, e := range funcExpr.Elts {
+	for _, e := range providersMap.Elts {
 		kv := e.(*goast.KeyValueExpr)
 		key := kv.Key.(*goast.BasicLit)
 		value := kv.Value.(*goast.CallExpr)
